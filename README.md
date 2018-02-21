@@ -2,7 +2,7 @@ meta-analysis <img src="https://raw.githubusercontent.com/slu-dss/fall-2017-semi
 ===========================================================
 
 ## Overview
-This is the repository for Cort Rudolph's brownbag on meta-analysis using `R`.
+This is the repository for Cort Rudolph's brownbag session on meta-analysis using `R`. **This is an upcoming seminar - please see [our website](https://slu-dss.github.io/news/metaanalysis/) for details and a link to RSVP!**
 
 ### Repository Contents
 This repository contains files for:
@@ -14,7 +14,7 @@ This repository contains files for:
 *TBA*
 
 ## About the SLU DSS
-### DSS Brownbag Series
+### About Our Brownbag Series
 This repository is associated with our semi-annual brownbag series, which we use to give SLU faculty, staff, and students the opportunity to showcase the awesome things they are doing with open-source tools (like `R`, Python, or Julia) in their research or teaching.
 
 ### About the SLU Data Science Seminar
