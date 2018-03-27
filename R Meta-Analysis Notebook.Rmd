@@ -1,0 +1,102 @@
+---
+title: "R for Meta-Analysis (MA)"
+output: html_notebook
+---
+
+Today, we will be focusing on a basic meta-analysis model for correlations. We will work out of a simulated dataset that I have put together specifically for this demonstration.
+
+First, we need to read in this data and take a look at it:
+```{r}
+# install.packages(readxl)
+library(readxl)
+RMetaData <- read_excel("R Meta-Analysis Data.xlsx")
+View(RMetaData)
+```
+
+This dataset is a 25x6 matrix, containing the following five variables:
+
+1) [,1] "studyNumber" = An index the study number in our database (K = 25)
+2) [,2] "Citation" = A short citation for the study being considered
+3) [,3] "rxy" = An effect size estimate (i.e., a correlation between variables X & Y)
+4) [,4] "N" = The sample size that was used to estimate 'rxy'          
+5) [,5] "mod" = A categorical study-level moderator variable (e.g., 0 = self vs. 1 = other reports of Y)
+
+To begin, let's consider the average correlation rxy. 
+This represents the unweighted average of 'rxy' across the K = 25 studies considered here
+```{r}
+mean(RMetaData$rxy)
+```
+
+We will be working with the 'metafor' package today, so let's install & load it now.
+You can learn more about this package, here: http://www.metafor-project.org/doku.php
+
+We will also use a function in the 'MAc' packages, so let's get that installed & loaded, too:
+```{r}
+# install.packages("metafor")
+library(metafor)
+
+# install.packages("MAc")
+library(MAc)
+```
+
+As a first step in our analyses, we need to compute the sampling variances for each 'rxy'
+The meta-analysis procedure that we will use here weights each 'rxy' by the inverse of its sampling variance (1/Sampling Variance).
+
+The logic to this is fairly straightforward:
+
+- Studies with larger Ns are more precise estimates of the parameter 
+- Studies with larger Ns also have smaller sampling variances
+- Therefore, by weighting each study by the inverse of its sampling variance, larger N studies get more "credit" in our model.
+
+The 'var_r' function in the MAc computes this for us simply:
+```{r}
+#Variance 
+RMetaData$var_rxy <- var_r(RMetaData$rxy, RMetaData$N)
+```
+
+With our sampling variances computed, let's start by specifying a simple meta-analysis model
+The basic function for a random-effects meta-analysis in 'metafor' is 'rma'
+We need to supply specify several arguments to this function:
+
+1) 'yi' = the effect to be meta-analyzed, in our case 'rxy'
+2) 'vi' = the sampling variance of the effect to be analyzed, in our case 'var_rxy'
+3) 'data' = our dataframe, 'RMetaData'
+4) 'method' = the estimation method, in our case 'REML' for "restricted maximum likelihood"
+```{r}
+meta_mod1 = rma(yi = rxy, vi = var_rxy, data=RMetaData, method="REML")
+summary(meta_mod1)
+```
+
+Taking a look at this output, we learn several important things:
+
+1) The average inverse-variance weighted effect is about rxy = .15 [Note: How does this compare to our original estimate of the average that we took earlier?]
+
+2) The 95% CI around this estimate does not include zero, so we are confident that it is statistically significantly different from zero (p < .05)
+
+We can also get a "forest plot" to visualize this effect against the K = 25 primary studies
+
+Note: there is some aparent variability in the K = 25 effects that comprise our model
+```{r}
+forest(meta_mod1, slab=RMetaData$Citation)
+```
+
+Moreover, from our output we learn:
+
+3) The 'Test of Heterogeneity' (Q) is statistically significant -- this suggests that the effects are heterogenous (i.e., not homogenous); this indicates the presence of moderators of this relationship
+
+4) I^2 = Proportion of total variation in effect sizes that is due to systematic differences between effect sizes rather than by chance (see Shadish & Haddock, 2009; pp. 263) is also high -- also suggesting presence of moderators.
+
+
+So, with this in mind, let's consider formal tests of moderation.
+Specifically, let's test whether there are differences based upon the source of Y (0 = self report, 1 = other report)
+
+```{r}
+meta_mod2 = rma(yi = rxy, vi = var_rxy, mods= ~ factor(mod)-1, data=RMetaData, method="REML")
+summary(meta_mod2)
+```
+
+From this output, we learn several additional things:
+
+1) The effect 'rxy' appears to be different for self vs. other reports (Corroborated also by the 'QM' test), thus we conclude moderation is occurring (i.e., the effect, rxy, is stronger for self as compared to other reports of Y)
+
+2) I^2 is reduced to zero and the estimate of residual heterogeneity (QE) is not statistically significant (p > .05); therefore, modeling this moderator accounts for an appreciable amount (all of it, actually) of the original heterogeneity we observed among effect sizes.
